@@ -1,0 +1,25 @@
+
+name: CI
+
+on:
+  push:
+    branches:
+      - dev
+  pull_request:
+    branches:
+      - dev
+
+jobs:
+  validate:
+    name: Validate repository
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check Git repository
+        run: |
+          git rev-parse --is-inside-work-tree
+          test -n "$(git ls-files)"
+          echo "Repository validation passed"
