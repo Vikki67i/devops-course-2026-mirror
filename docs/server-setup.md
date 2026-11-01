@@ -67,7 +67,28 @@
 - `02-keys-configured` — состояние после настройки ключей SSH.
 - `03-ssh-hardened` — состояние после усиления безопасности SSH.
 
-## 8. Проверка конфигурации
+## 8. Веб-сервер
+
+- **Пакет:** `nginx` (устанавливается командой `sudo apt install -y nginx`, версия из репозитория Ubuntu 1.28.3).
+- **Конфигурация ресурса:** `/etc/nginx/sites-available/devops-site`, активирована ссылкой в `/etc/nginx/sites-enabled/`; стандартный ресурс отключён удалением ссылки `/etc/nginx/sites-enabled/default`.
+- **Описание ресурса:** блок на порту 80 с `server_name devops.local` и перенаправлением `return 301 https://$host$request_uri`; блок на порту 443 (`listen 443 ssl`, `ssl_protocols TLSv1.2 TLSv1.3`) с `root /var/www/devops-site`, `error_page 404 /404.html` и журналами `/var/log/nginx/devops-site.access.log` и `devops-site.error.log`.
+- **Каталог ресурса:** `/var/www/devops-site`, владелец `devops:devops`, права 755 для каталогов и 644 для файлов (приводятся командой `rsync --chmod=D755,F644`).
+- **Сертификат:** `/etc/ssl/certs/devops.crt`, владелец root, права 644.
+- **Закрытый ключ:** `/etc/ssl/private/devops.key`, владелец root, права 600.
+- **Команда формирования сертификата** (самоподписанный, срок действия 365 дней, имя в поле SAN):
+
+    sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+      -keyout /etc/ssl/private/devops.key \
+      -out /etc/ssl/certs/devops.crt \
+      -subj "/CN=devops.local" \
+      -addext "subjectAltName=DNS:devops.local"
+
+
+- **Применение конфигурации:** `sudo nginx -t && sudo systemctl reload nginx`.
+- **Доставка содержимого:** `scripts/deploy.sh` (rsync по SSH, проверка `https://devops.local`).
+- **Межсетевой экран:** правила для портов 80 и 443 созданы в ПР № 5.
+
+## 9. Проверка конфигурации
 
 Скрипт `scripts/audit.sh` проверяет запрет SSH-входа для root, отключение парольной аутентификации, порт SSH, ограничение попыток входа, активность UFW и политику входящих соединений.
 
